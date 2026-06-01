@@ -3,7 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: kanban-db
     ports:
-      - "5432:5432"
+      # 5433 on host → 5432 in container.
+      # Different from JobMatcher (5432) so both projects can run side by side.
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -44,7 +46,7 @@ services:
       # docker network, regardless of what backend/.env has for local non-Docker dev.
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/kanban
       - REDIS_URL=redis://redis:6379
-      - ALLOWED_ORIGINS=http://localhost:5173
+      - ALLOWED_ORIGINS=http://localhost:5174
       - NODE_ENV=development
     depends_on:
       db:
@@ -61,7 +63,9 @@ services:
       dockerfile: Dockerfile.dev
     container_name: kanban-frontend
     ports:
-      - "5173:5173"
+      # 5174 on host → 5173 in container.
+      # Different from JobMatcher (5173) so both can run together.
+      - "5174:5173"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public

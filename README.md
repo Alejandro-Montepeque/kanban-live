@@ -42,8 +42,8 @@ cp backend/.env.example backend/.env
 docker compose up
 
 # Backend:  http://localhost:3000
-# Frontend: http://localhost:5173
-# Postgres: localhost:5432
+# Frontend: http://localhost:5174
+# Postgres: localhost:5433
 ```
 
 ## Testing
