@@ -47,6 +47,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/kanban
       - REDIS_URL=redis://redis:6379
       - ALLOWED_ORIGINS=http://localhost:5174
+      - FRONTEND_URL=http://localhost:5174
       - NODE_ENV=development
     depends_on:
       db:

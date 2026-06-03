@@ -1,10 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
-/**
- * Wipe all tables between tests so each spec starts from a clean slate.
- * The order matters because of foreign keys: cards before columns before boards,
- * memberships before workspaces, refresh tokens before users.
- */
+// Delete order matters because of foreign keys.
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.activity.deleteMany()
   await prisma.card.deleteMany()

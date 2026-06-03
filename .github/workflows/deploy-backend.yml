@@ -122,8 +122,8 @@ jobs:
             --cpu=1 \
             --min-instances=0 \
             --max-instances=3 \
-            --set-secrets=DATABASE_URL=database-url:latest,JWT_ACCESS_SECRET=jwt-access-secret:latest,JWT_REFRESH_SECRET=jwt-refresh-secret:latest \
-            --set-env-vars="^@^ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}@NODE_ENV=production"
+            --set-secrets=DATABASE_URL=database-url:latest,JWT_ACCESS_SECRET=jwt-access-secret:latest,JWT_REFRESH_SECRET=jwt-refresh-secret:latest,RESEND_API_KEY=resend-api-key:latest \
+            --set-env-vars="^@^ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}@FRONTEND_URL=${{ secrets.FRONTEND_URL }}@NODE_ENV=production"
 
       - name: Show service URL
         run: |

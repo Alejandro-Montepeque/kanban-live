@@ -6,10 +6,9 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
-  withCredentials: true, // send + receive cookies (the refresh token)
+  withCredentials: true, // needed for the HttpOnly refresh cookie
 })
 
-// Request interceptor: attach access token from the store.
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().accessToken
   if (token && config.headers) {
@@ -18,8 +17,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Response interceptor: on 401, attempt one silent refresh and retry the request.
-// If refresh also fails, clear auth and let the error propagate so the UI can redirect.
+// On 401, attempt one silent refresh and retry the original request.
 interface RetriableRequest extends AxiosRequestConfig {
   _retried?: boolean
 }

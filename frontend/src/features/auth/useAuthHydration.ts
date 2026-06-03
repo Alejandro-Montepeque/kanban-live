@@ -3,13 +3,8 @@ import { useEffect } from 'react'
 import { me, refresh } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-/**
- * On app load, attempt to silently restore a session.
- *
- * The refresh cookie is HttpOnly so we cannot read it from JS, but we can
- * call /auth/refresh — if it succeeds, we have a valid session; then we
- * fetch the user. If anything fails, we stay logged out.
- */
+// Tries POST /auth/refresh on app load to restore a session from the HttpOnly
+// cookie. On success the user is logged in without typing credentials.
 export function useAuthHydration(): { isHydrated: boolean } {
   const { isHydrated, setAuth, setHydrated, clear } = useAuthStore()
 

@@ -1,14 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-/**
- * Auth flow E2E.
- *
- * These tests run against a real backend + database. CI starts both services
- * before running this file. Locally, you must have `docker compose up` running.
- *
- * Each test generates a unique email so they don't collide if the test DB is
- * not reset between runs.
- */
+// Auth E2E. Requires backend + DB running (docker compose up). Each test
+// uses a unique email to avoid cross-run collisions.
 
 function uniqueEmail(prefix = 'user'): string {
   const random = Math.random().toString(36).slice(2, 10)
@@ -16,81 +9,73 @@ function uniqueEmail(prefix = 'user'): string {
 }
 
 test.describe('Auth flow', () => {
-  test('register → lands on dashboard and shows the user name', async ({ page }) => {
+  test('register shows the "verify your email" screen instead of auto-logging in', async ({
+    page,
+  }) => {
     const email = uniqueEmail('register')
-    const name = 'Alice Tester'
-
     await page.goto('/register')
-    await page.getByLabel('Name').fill(name)
+    await page.getByLabel('Name').fill('Alice Tester')
     await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('correctHorseBatteryStaple')
-
+    await page.getByLabel('Password').fill('CorrectHorse123')
     await page.getByRole('button', { name: /create account/i }).click()
 
-    await expect(page).toHaveURL(/\/dashboard/)
-    await expect(page.getByRole('heading', { name: new RegExp(`welcome, ${name}`, 'i') })).toBeVisible()
+    // No redirect to /dashboard — user must verify email first.
+    await expect(page.getByRole('heading', { name: /one last step/i })).toBeVisible()
+    await expect(page.getByText(email)).toBeVisible()
+    await expect(page.getByRole('button', { name: /resend verification/i })).toBeVisible()
   })
 
-  test('login with wrong password shows an error and stays on the login page', async ({ page }) => {
-    const email = uniqueEmail('badlogin')
+  test('login is blocked with a clear message when the email is not verified', async ({
+    page,
+  }) => {
+    const email = uniqueEmail('unverified')
 
-    // Register first so the email exists.
+    // Register but DON'T verify.
     await page.goto('/register')
     await page.getByLabel('Name').fill('Bob')
     await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('rightPassword123')
+    await page.getByLabel('Password').fill('CorrectHorse123')
     await page.getByRole('button', { name: /create account/i }).click()
-    await expect(page).toHaveURL(/\/dashboard/)
+    await expect(page.getByRole('heading', { name: /one last step/i })).toBeVisible()
 
-    // Log out to come back to /login.
-    await page.getByRole('button', { name: /log out/i }).click()
-    await expect(page).toHaveURL(/\/login/)
-
-    // Attempt login with wrong password.
+    // Try to sign in directly.
+    await page.goto('/login')
     await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('wrongPassword999')
+    await page.getByLabel('Password').fill('CorrectHorse123')
     await page.getByRole('button', { name: /sign in/i }).click()
 
-    await expect(page.getByRole('alert')).toHaveText(/invalid email or password/i)
-    await expect(page).toHaveURL(/\/login/)
+    await expect(page.getByRole('alert')).toContainText(/verify your email/i)
+    await expect(page.getByRole('button', { name: /resend verification/i })).toBeVisible()
   })
 
-  test('session persists across reload (refresh token works)', async ({ page }) => {
-    const email = uniqueEmail('persist')
-    await page.goto('/register')
-    await page.getByLabel('Name').fill('Persistent Pat')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('correctHorseBatteryStaple')
-    await page.getByRole('button', { name: /create account/i }).click()
+  test('forgot-password screen shows confirmation regardless of email existence', async ({
+    page,
+  }) => {
+    await page.goto('/login')
+    await page.getByRole('link', { name: /forgot your password/i }).click()
+    await expect(page).toHaveURL(/\/forgot-password/)
 
-    await expect(page).toHaveURL(/\/dashboard/)
+    await page.getByLabel('Email').fill('does-not-exist@example.com')
+    await page.getByRole('button', { name: /send reset link/i }).click()
 
-    await page.reload()
-
-    await expect(page).toHaveURL(/\/dashboard/)
-    await expect(page.getByRole('heading', { name: /welcome, persistent pat/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /check your inbox/i })).toBeVisible()
   })
 
-  test('logout clears the session and revokes the refresh token', async ({ page }) => {
-    const email = uniqueEmail('logout')
-    await page.goto('/register')
-    await page.getByLabel('Name').fill('Logger Outter')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('correctHorseBatteryStaple')
-    await page.getByRole('button', { name: /create account/i }).click()
-
-    await page.getByRole('button', { name: /log out/i }).click()
-    await expect(page).toHaveURL(/\/login/)
-
-    // Try to access /dashboard directly: should redirect back to /login.
-    await page.goto('/dashboard')
-    await expect(page).toHaveURL(/\/login/)
+  test('reset-password page shows error when no token is provided', async ({ page }) => {
+    await page.goto('/reset-password')
+    await expect(page.getByRole('heading', { name: /missing reset token/i })).toBeVisible()
   })
 
-  test('client-side validation blocks empty form submission', async ({ page }) => {
+  test('verify-email page shows error when no token is provided', async ({ page }) => {
+    await page.goto('/verify-email')
+    await expect(
+      page.getByRole('heading', { name: /missing verification token/i }),
+    ).toBeVisible()
+  })
+
+  test('client-side validation blocks empty login form submission', async ({ page }) => {
     await page.goto('/login')
     await page.getByRole('button', { name: /sign in/i }).click()
-
     await expect(page.getByText(/invalid email/i)).toBeVisible()
   })
 })

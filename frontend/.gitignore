@@ -6,5 +6,6 @@ coverage/
 playwright-report/
 test-results/
 playwright/.cache/
+vite.config.ts.timestamp-*.mjs
 *.log
 .DS_Store

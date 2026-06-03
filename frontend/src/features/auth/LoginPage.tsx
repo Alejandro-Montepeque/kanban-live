@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { login } from '@/api/auth'
+import { login, resendVerification } from '@/api/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
@@ -13,15 +13,20 @@ import { useAuthStore } from '@/stores/auth'
 import { AuthShell } from './AuthShell'
 import { loginSchema, type LoginInput } from './schemas'
 
+type LoginErrorKind = 'invalid' | 'locked' | 'unverified' | 'other'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [errorKind, setErrorKind] = useState<LoginErrorKind | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [resendSent, setResendSent] = useState(false)
 
   const {
     register: registerField,
     handleSubmit,
     formState: { errors, isSubmitting },
+    getValues,
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) })
 
   const mutation = useMutation({
@@ -31,18 +36,35 @@ export default function LoginPage() {
       navigate('/dashboard', { replace: true })
     },
     onError: (err: unknown) => {
-      if (err instanceof AxiosError && err.response?.status === 401) {
-        setServerError('Invalid email or password')
-      } else {
-        setServerError('Something went wrong. Please try again.')
+      if (err instanceof AxiosError) {
+        if (err.response?.status === 401) {
+          setErrorKind('invalid')
+          setErrorMessage('Invalid email or password')
+          return
+        }
+        if (err.response?.status === 403) {
+          const message: string = err.response.data?.message ?? ''
+          if (/email not verified/i.test(message)) {
+            setErrorKind('unverified')
+            setErrorMessage('Please verify your email before signing in.')
+            return
+          }
+          if (/locked/i.test(message)) {
+            setErrorKind('locked')
+            setErrorMessage(message)
+            return
+          }
+        }
       }
+      setErrorKind('other')
+      setErrorMessage('Something went wrong. Please try again.')
     },
   })
 
-  const onSubmit = (data: LoginInput) => {
-    setServerError(null)
-    mutation.mutate(data)
-  }
+  const resendMutation = useMutation({
+    mutationFn: () => resendVerification(getValues('email')),
+    onSuccess: () => setResendSent(true),
+  })
 
   return (
     <AuthShell
@@ -50,7 +72,16 @@ export default function LoginPage() {
       title="Welcome back"
       subtitle="Pick up where your team left off."
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form
+        onSubmit={handleSubmit((data) => {
+          setErrorKind(null)
+          setErrorMessage(null)
+          setResendSent(false)
+          mutation.mutate(data)
+        })}
+        className="space-y-4"
+        noValidate
+      >
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -85,12 +116,30 @@ export default function LoginPage() {
           )}
         </div>
 
-        {serverError && (
+        {errorMessage && (
           <div
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 space-y-2"
             role="alert"
           >
-            {serverError}
+            <p>{errorMessage}</p>
+            {errorKind === 'unverified' && (
+              <div>
+                {resendSent ? (
+                  <p className="text-emerald-300 text-xs">
+                    Verification email re-sent. Check your inbox.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => resendMutation.mutate()}
+                    disabled={resendMutation.isPending}
+                    className="text-xs underline text-accent-glow hover:text-ink"
+                  >
+                    {resendMutation.isPending ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -99,12 +148,19 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-ink-muted mt-6">
-        No account?{' '}
-        <Link to="/register" className="text-accent-glow hover:text-ink transition-colors">
-          Create one
-        </Link>
-      </p>
+      <div className="text-center text-sm text-ink-muted mt-6 space-y-2">
+        <p>
+          <Link to="/forgot-password" className="text-accent-glow hover:text-ink transition-colors">
+            Forgot your password?
+          </Link>
+        </p>
+        <p>
+          No account?{' '}
+          <Link to="/register" className="text-accent-glow hover:text-ink transition-colors">
+            Create one
+          </Link>
+        </p>
+      </div>
     </AuthShell>
   )
 }

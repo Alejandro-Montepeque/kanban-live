@@ -77,11 +77,15 @@ echo "REPLACE_WITH_ANOTHER_LONG_RANDOM_STRING" | gcloud secrets create jwt-refre
   --data-file=- \
   --project="$PROJECT_ID" 2>/dev/null || true
 
+echo "REPLACE_WITH_RESEND_API_KEY_FROM_RESEND_DOT_COM" | gcloud secrets create resend-api-key \
+  --data-file=- \
+  --project="$PROJECT_ID" 2>/dev/null || true
+
 # Cloud Run runs containers using the default Compute Engine service account.
 # Grant it read access to the secrets so the deployed revision can mount them.
 COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 echo "Granting Secret Accessor to Cloud Run runtime SA ($COMPUTE_SA)..."
-for secret in database-url jwt-access-secret jwt-refresh-secret; do
+for secret in database-url jwt-access-secret jwt-refresh-secret resend-api-key; do
   gcloud secrets add-iam-policy-binding "$secret" \
     --member="serviceAccount:$COMPUTE_SA" \
     --role="roles/secretmanager.secretAccessor" \

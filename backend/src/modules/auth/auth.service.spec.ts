@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 
+import { MailerService } from '../mailer/mailer.service'
 import { PrismaService } from '../../prisma/prisma.service'
 import { AuthService } from './auth.service'
 
@@ -15,6 +16,7 @@ describe('AuthService (unit)', () => {
         { provide: PrismaService, useValue: {} },
         { provide: JwtService, useValue: { signAsync: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailerService, useValue: { send: jest.fn() } },
       ],
     }).compile()
     service = moduleRef.get(AuthService)
