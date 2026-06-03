@@ -77,6 +77,22 @@ model Workspace {
 
   memberships Membership[]
   boards      Board[]
+  invitations Invitation[]
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  email       String?
+  role        Role      @default(MEMBER)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([token])
 }
 
 model Membership {

@@ -28,6 +28,36 @@ export async function resendVerification(email: string): Promise<void> {
   await api.post('/auth/resend-verification', { email })
 }
 
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  emailVerifiedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export async function getProfile(): Promise<UserProfile> {
+  const res = await api.get<UserProfile>('/auth/profile')
+  return res.data
+}
+
+export async function updateProfile(name: string): Promise<AuthUser> {
+  const res = await api.patch<AuthUser>('/auth/profile', { name })
+  return res.data
+}
+
+export async function changePassword(input: {
+  currentPassword: string
+  newPassword: string
+}): Promise<void> {
+  await api.post('/auth/change-password', input)
+}
+
+export async function revokeAllSessions(): Promise<void> {
+  await api.post('/auth/sessions/revoke-all')
+}
+
 export async function login(input: { email: string; password: string }): Promise<AuthResponse> {
   const res = await api.post<AuthResponse>('/auth/login', input)
   return res.data

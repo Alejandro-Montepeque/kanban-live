@@ -8,7 +8,9 @@ import { BoardsModule } from './modules/boards/boards.module'
 import { CardsModule } from './modules/cards/cards.module'
 import { ColumnsModule } from './modules/columns/columns.module'
 import { HealthModule } from './modules/health/health.module'
+import { InvitationsModule } from './modules/invitations/invitations.module'
 import { MailerModule } from './modules/mailer/mailer.module'
+import { RealtimeModule } from './modules/realtime/realtime.module'
 import { WorkspacesModule } from './modules/workspaces/workspaces.module'
 import { PrismaModule } from './prisma/prisma.module'
 
@@ -20,9 +22,11 @@ import { PrismaModule } from './prisma/prisma.module'
     MailerModule,
     AuthModule,
     WorkspacesModule,
+    RealtimeModule,
     BoardsModule,
     ColumnsModule,
     CardsModule,
+    InvitationsModule,
     HealthModule,
   ],
   providers: [

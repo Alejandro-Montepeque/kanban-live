@@ -8,6 +8,7 @@ import { deleteWorkspace, getWorkspace } from '@/api/workspaces'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CreateBoardModal } from '@/features/boards/CreateBoardModal'
+import { InviteMemberModal } from './InviteMemberModal'
 import { RenameWorkspaceModal } from './RenameWorkspaceModal'
 
 export default function WorkspacePage() {
@@ -19,6 +20,7 @@ export default function WorkspacePage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const workspaceQuery = useQuery({
@@ -215,10 +217,21 @@ export default function WorkspacePage() {
         </div>
 
         {/* Members aside */}
-        <aside className="rounded-2xl border border-bg-border bg-bg-card/60 p-5 h-fit">
-          <h2 className="text-sm font-semibold text-ink mb-3">
-            Members <span className="text-ink-subtle">({ws.members.length})</span>
-          </h2>
+        <aside className="rounded-2xl border border-bg-border bg-bg-card/60 p-5 h-fit space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ink">
+              Members <span className="text-ink-subtle">({ws.members.length})</span>
+            </h2>
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setInviteOpen(true)}
+                className="text-[11px] text-accent-glow hover:text-ink transition-colors"
+              >
+                + Invite
+              </button>
+            )}
+          </div>
           <ul className="space-y-2">
             {ws.members.map((m) => (
               <li key={m.userId} className="flex items-center gap-2.5 text-sm">
@@ -255,6 +268,12 @@ export default function WorkspacePage() {
         onClose={() => setRenameOpen(false)}
         workspaceId={ws.id}
         currentName={ws.name}
+      />
+      <InviteMemberModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        workspaceId={ws.id}
+        workspaceName={ws.name}
       />
       <ConfirmDialog
         open={deleteOpen}

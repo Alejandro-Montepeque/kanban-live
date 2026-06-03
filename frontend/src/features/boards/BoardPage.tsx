@@ -27,7 +27,9 @@ import { between } from '@/lib/fractional-index'
 import { CardEditorModal } from './CardEditorModal'
 import { CreateColumnModal } from './CreateColumnModal'
 import { KanbanColumn } from './KanbanColumn'
+import { PresenceAvatars } from './PresenceAvatars'
 import { RenameBoardModal } from './RenameBoardModal'
+import { useBoardSocket } from './useBoardSocket'
 
 type DragKind = 'card' | 'column' | null
 
@@ -51,6 +53,8 @@ export default function BoardPage() {
     queryFn: () => getBoard(boardId!),
     enabled: !!boardId,
   })
+
+  const { connected, presence } = useBoardSocket(boardId)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -272,7 +276,8 @@ export default function BoardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <PresenceAvatars users={presence} connected={connected} />
           <Button onClick={() => setAddColumnOpen(true)} variant="subtle">
             + Add column
           </Button>

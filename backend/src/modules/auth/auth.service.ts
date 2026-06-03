@@ -12,11 +12,13 @@ import * as argon2 from 'argon2'
 
 import { MailerService } from '../mailer/mailer.service'
 import { PrismaService } from '../../prisma/prisma.service'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { ResendVerificationDto } from './dto/resend-verification.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
+import { UpdateProfileDto } from './dto/update-profile.dto'
 import { VerifyEmailDto } from './dto/verify-email.dto'
 import type { AuthUser, JwtPayload } from './types/jwt-payload'
 
@@ -154,6 +156,55 @@ export class AuthService {
       where: { userId, revoked: false },
       data: { revoked: true },
     })
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        emailVerifiedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+    return user
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<AuthUser> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name },
+      select: { id: true, email: true, name: true },
+    })
+    return updated
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } })
+    const valid = await argon2.verify(user.passwordHash, dto.currentPassword)
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect')
+    }
+    const newHash = await argon2.hash(dto.newPassword)
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: newHash,
+          passwordChangedAt: new Date(),
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        },
+      }),
+      // Revoke all existing sessions — user has to re-login on all devices.
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revoked: false },
+        data: { revoked: true },
+      }),
+    ])
   }
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<void> {

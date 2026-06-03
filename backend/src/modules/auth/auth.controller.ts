@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -16,11 +17,13 @@ import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import type { AuthResult } from './auth.service'
 import { CurrentUser } from './decorators/current-user.decorator'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { ResendVerificationDto } from './dto/resend-verification.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
+import { UpdateProfileDto } from './dto/update-profile.dto'
 import { VerifyEmailDto } from './dto/verify-email.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import type { AuthUser } from './types/jwt-payload'
@@ -104,6 +107,42 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  profile(@CurrentUser() user: AuthUser) {
+    return this.auth.getProfile(user.id)
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  updateProfile(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
+    return this.auth.updateProfile(user.id, dto)
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.auth.changePassword(user.id, dto)
+    // We just revoked all sessions including this one — clear the cookie.
+    res.clearCookie(REFRESH_COOKIE, this.cookieOptions())
+  }
+
+  @Post('sessions/revoke-all')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeAllSessions(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.auth.revokeAllSessions(user.id)
+    res.clearCookie(REFRESH_COOKIE, this.cookieOptions())
   }
 
   private setRefreshCookie(res: Response, result: AuthResult): void {

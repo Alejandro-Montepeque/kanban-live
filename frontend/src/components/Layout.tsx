@@ -1,8 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { logout } from '@/api/auth'
+import { disconnectSocket } from '@/api/socket'
 import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +15,7 @@ export function Layout({ children }: PropsWithChildren) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSettled: () => {
+      disconnectSocket()
       clear()
       navigate('/login', { replace: true })
     },
@@ -45,14 +47,18 @@ export function Layout({ children }: PropsWithChildren) {
           </div>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {user && (
-              <div className="flex items-center gap-2 min-w-0">
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+                aria-label="Open profile"
+              >
                 <div className="w-7 h-7 shrink-0 rounded-full bg-gradient-to-br from-accent to-cyan-glow grid place-items-center text-[11px] font-bold text-bg">
                   {initials || '·'}
                 </div>
                 <span className="hidden md:inline text-sm text-ink-muted truncate max-w-[160px]">
                   {user.name}
                 </span>
-              </div>
+              </Link>
             )}
             <Button
               variant="ghost"

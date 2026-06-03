@@ -10,6 +10,8 @@ import VerifyEmailPage from '@/features/auth/VerifyEmailPage'
 import BoardPage from '@/features/boards/BoardPage'
 import { useAuthHydration } from '@/features/auth/useAuthHydration'
 import DashboardPage from '@/features/dashboard/DashboardPage'
+import ProfilePage from '@/features/profile/ProfilePage'
+import JoinWorkspacePage from '@/features/workspaces/JoinWorkspacePage'
 import WorkspacePage from '@/features/workspaces/WorkspacePage'
 
 export default function App() {
@@ -24,6 +26,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/join/:token" element={<JoinWorkspacePage />} />
         <Route
           path="/dashboard"
           element={
@@ -50,6 +53,16 @@ export default function App() {
             <ProtectedRoute>
               <Layout>
                 <BoardPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProfilePage />
               </Layout>
             </ProtectedRoute>
           }
