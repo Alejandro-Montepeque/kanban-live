@@ -81,7 +81,14 @@ jobs:
 
       - name: Build backend
         working-directory: backend
-        run: npm run build
+        run: |
+          npm run build
+          # Verify the entry point is where we expect it before trying to start it.
+          test -f dist/main.js || {
+            echo "::error::dist/main.js not found after build. Listing dist/:"
+            ls -laR dist/ || true
+            exit 1
+          }
 
       - name: Start backend (background)
         working-directory: backend

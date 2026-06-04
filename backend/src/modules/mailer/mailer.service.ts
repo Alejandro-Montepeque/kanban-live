@@ -17,12 +17,20 @@ export class MailerService {
   constructor(private readonly config: ConfigService) {}
 
   async send(input: SendEmailInput): Promise<void> {
-    const apiKey = this.config.get<string>('RESEND_API_KEY')
-    if (!apiKey) {
+    const apiKey = this.config.get<string>('RESEND_API_KEY')?.trim()
+    // Real Resend keys start with "re_". Anything else (empty, placeholder,
+    // malformed) falls back to console logging so the app never crashes on
+    // an email-sending step.
+    if (!apiKey || !apiKey.startsWith('re_')) {
       this.logToConsole(input)
       return
     }
-    await this.sendViaResend(input, apiKey)
+    try {
+      await this.sendViaResend(input, apiKey)
+    } catch (err) {
+      this.logger.error(`Email send failed, falling back to console: ${err}`)
+      this.logToConsole(input)
+    }
   }
 
   private logToConsole(input: SendEmailInput): void {
